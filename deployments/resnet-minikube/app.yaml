@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resnet-app
+  labels:
+    k8s-app: resnet-app
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: resnet-app
+  template:
+    metadata:
+      labels:
+        k8s-app: resnet-app
+    spec:
+      containers:
+        - name: resnet-app
+          image: docker-registry.your.org.com/$USER/resnet_serving:v0.1 # must change!
+          ports:
+            - containerPort: 8500
+              name: grpc

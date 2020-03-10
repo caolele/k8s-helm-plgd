@@ -1,0 +1,47 @@
+replicaCount: 1
+
+image:
+  name: tensorflow/serving:1.13.1
+  pullPolicy: IfNotPresent
+  args: []
+  grpcPort: 8500
+  # restPort: 8501
+
+model:
+  name: resnet
+  url: gs://my-project/resnet/export/123456 # set accordingly
+
+# Set with --set-file
+# This key is used only once initially to download the exported model from GCS.
+gcp:
+  saKey:
+
+# Set with --set-file
+# TLS key and certification is mandatory for gRPC service to work.
+tls:
+  key:
+  cert:
+
+nameOverride:
+fullnameOverride:
+
+service:
+  grpcPort: 8500
+  # restPort: 8501
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+    # nginx.ingress.kubernetes.io/service-match: 'grpc-service-2: header("gms", "resnet")'
+  hostSuffix: model-serv.my.org
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi

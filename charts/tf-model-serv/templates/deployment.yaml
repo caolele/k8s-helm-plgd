@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tf-model-serv.fullname" . }}
+  labels:
+    {{- include "tf-model-serv.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "tf-model-serv.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "tf-model-serv.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/secret: {{ .Values.gcp.saKey | sha256sum }}
+    spec:
+      initContainers:
+        - name: download-model
+          image: gcr.io/google.com/cloudsdktool/cloud-sdk:281.0.0-alpine
+          args: ["sh", "-c", "mkdir -p /models/{{ .Values.model.name }} && gsutil -o Credentials:gs_service_key_file=/secrets/key.json cp -r {{ .Values.model.url }} /models/{{ .Values.model.name }}"]
+          volumeMounts:
+            - name: model-volume
+              mountPath: /models
+            - name: gcp-key-volume
+              mountPath: /secrets
+              readOnly: true
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.image.name | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: {{ toJson .Values.image.args }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.image.grpcPort }}
+              protocol: TCP
+            # - name: rest
+            #   containerPort: {{ .Values.image.restPort }}
+            #   protocol: TCP
+          env:
+            - name: MODEL_NAME
+              value: {{ .Values.model.name }}
+          # livenessProbe:
+          #   httpGet:
+          #     path: /gms.{{ .Values.model.name }}
+          #     port: grpc
+          # readinessProbe:
+          #   httpGet:
+          #     path: /gms.{{ .Values.model.name }}
+          #     port: grpc
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: model-volume
+              mountPath: /models
+              readOnly: true
+      volumes:
+        - name: model-volume
+          emptyDir: {}
+        - name: gcp-key-volume
+          secret:
+            secretName: {{ include "tf-model-serv.fullname" . }}-gsa
+            items:
+              - key: GCP_SA_KEY
+                path: key.json

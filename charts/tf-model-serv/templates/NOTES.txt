@@ -1,0 +1,7 @@
+1. Model {{ .Values.model.name }} is served via:
+{{- if .Values.ingress.enabled }}
+  GRPC at {{ include "tf-model-serv.fdqn" . }}:443
+{{- else }}
+  Port Forwarding (Access model via 127.0.0.1:8080) using command
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "tf-model-serv.fullname" . }} 8080:{{ .Values.service.grpcPort }}
+{{- end }}

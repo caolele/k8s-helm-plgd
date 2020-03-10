@@ -1,0 +1,24 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    # nginx.ingress.kubernetes.io/auth-tls-verify-client: \"on\"
+    # nginx.ingress.kubernetes.io/auth-tls-secret: \"default/my-certs\"
+    # nginx.ingress.kubernetes.io/grpc-backend: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+  name: resnet-ingress
+  namespace: default
+spec:
+  rules:
+    - host: resnet.info
+      http:
+        paths:
+          - backend:
+              serviceName: resnet-service
+              servicePort: 8500
+  tls:
+    - hosts:
+      - resnet.info
+      secretName: resnet-secret
